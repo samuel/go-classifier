@@ -12,9 +12,11 @@ func TestBayesianClassifier(t *testing.T) {
 	}
 	bc.AddCategory("spam")
 	bc.AddCategory("ham")
-	bc.AddDocument("spam", "this is spam")
-	bc.AddDocument("ham", "this isn't maybe")
-	p, err := bc.CategoryProbability("this isn't", "spam")
+	bc.AddDocument("spam", "this is spam what")
+	bc.AddDocument("ham", "this isn't maybe what")
+	bc.AddDocument("ham", "what")
+	text := "this what isn't"
+	p, err := bc.CategoryProbabilities(text, []string{"spam", "ham"})
 	if err != nil {
 		t.Fatal(err)
 	}
