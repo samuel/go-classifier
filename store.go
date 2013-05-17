@@ -9,12 +9,17 @@ var (
 	ErrNegativeCount         = errors.New("classifier: count would go negative")
 )
 
+type ErrCategoryDoesNotExist string
+
+func (e ErrCategoryDoesNotExist) Error() string {
+	return "ErrCategoryDoesNotExist(" + string(e) + ")"
+}
+
 type Store interface {
-	Categories() ([]string, error)
+	Categories() (map[string]int64, error) // category -> document count
 	AddCategory(name string) error
 	AddDocument(category string, tokens []string) error
 	RemoveDocument(category string, tokens []string) error
-	DocumentCounts() (map[string]int64, error)                                             // category -> count
 	TokenCounts(categories []string, tokens []string) (map[string]map[string]int64, error) // category -> token -> count
 }
 
@@ -30,10 +35,6 @@ func NewLocalStore() Store {
 		documentCounts: make(map[string]int64),
 		tokenCounts:    make(map[string]map[string]int64),
 	}
-}
-
-func (ls *localStore) Categories() ([]string, error) {
-	return ls.categories, nil
 }
 
 func (ls *localStore) AddCategory(name string) error {
@@ -70,7 +71,7 @@ func (ls *localStore) RemoveDocument(category string, tokens []string) error {
 	return nil
 }
 
-func (ls *localStore) DocumentCounts() (map[string]int64, error) {
+func (ls *localStore) Categories() (map[string]int64, error) {
 	return ls.documentCounts, nil
 }
 

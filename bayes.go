@@ -132,7 +132,7 @@ func (bc *BayesianClassifier) probabilities(tokens []string, categories []string
 	if err != nil {
 		return nil, err
 	}
-	docCounts, err := bc.store.DocumentCounts()
+	docCounts, err := bc.store.Categories()
 	if err != nil {
 		return nil, err
 	}
