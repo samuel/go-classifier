@@ -95,6 +95,7 @@ func (s *SQLStore) updateDocument(category string, tokens []string, delta int64)
 	row := tx.QueryRow("SELECT id FROM categories WHERE name = ?", category)
 	var categoryId int64
 	if err := row.Scan(&categoryId); err != nil {
+		tx.Rollback()
 		return err
 	}
 	for _, t := range tokens {
@@ -105,10 +106,15 @@ func (s *SQLStore) updateDocument(category string, tokens []string, delta int64)
 			res, err = tx.Exec(updateTokenCountQuery, delta, categoryId, t)
 		}
 		if err != nil {
+			tx.Rollback()
 			return err
 		} else if n, err := res.RowsAffected(); err != nil {
+			tx.Rollback()
 			return err
 		} else if n != 1 {
+			if err := tx.Rollback(); err != nil {
+				return err
+			}
 			return errors.New("classifier: failed to update token")
 		}
 	}
