@@ -133,6 +133,7 @@ func (s *SQLStore) TokenCounts(categories []string, tokens []string) (map[string
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	categoryMap := make(map[string]int64, len(categories))
 	revCategoryMap := make(map[int64]string, len(categories))
 	for rows.Next() {
@@ -173,6 +174,7 @@ func (s *SQLStore) TokenCounts(categories []string, tokens []string) (map[string
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	res := make(map[string]map[string]int64, len(categories))
 	for _, c := range categories {
 		res[c] = make(map[string]int64, 0)
