@@ -129,7 +129,7 @@ func (s *sqlStore) escape(st string) string {
 	return "'" + st + "'"
 }
 
-func (s *sqlStore) TokenCounts(categories []string, tokens []string) (map[string]map[string]int64, error) {
+func (s *sqlStore) TokenCounts(categories, tokens []string) (map[string]map[string]int64, error) {
 	rows, err := s.categoriesQuery.Query()
 	if err != nil {
 		return nil, err

@@ -22,7 +22,7 @@ type Store interface {
 	AddCategory(name string) error
 	AddDocument(category string, tokens []string) error
 	RemoveDocument(category string, tokens []string) error
-	TokenCounts(categories []string, tokens []string) (map[string]map[string]int64, error) // category -> token -> count
+	TokenCounts(categories, tokens []string) (map[string]map[string]int64, error) // category -> token -> count
 }
 
 type localStore struct {
@@ -78,7 +78,7 @@ func (ls *localStore) Categories() (map[string]int64, error) {
 	return ls.documentCounts, nil
 }
 
-func (ls *localStore) TokenCounts(categories []string, tokens []string) (map[string]map[string]int64, error) {
+func (ls *localStore) TokenCounts(categories, tokens []string) (map[string]map[string]int64, error) {
 	if categories == nil {
 		categories = ls.categories
 	}
