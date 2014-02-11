@@ -19,15 +19,16 @@ const (
 	tokensQuery                   = `SELECT "id", "category_id", "token", "count" FROM ` + tokensTable + ` WHERE category_id IN (%s) AND token IN (%s)`
 )
 
-type SQLStore struct {
+type sqlStore struct {
 	db                  *sql.DB
 	categoriesQuery     *sql.Stmt
 	insertCategoryQuery *sql.Stmt
 	tokensQuery         *sql.Stmt
 }
 
-func NewSQLStore(db *sql.DB) (*SQLStore, error) {
-	s := &SQLStore{
+// NewSQLStore returns an SQL database backed Store
+func NewSQLStore(db *sql.DB) (Store, error) {
+	s := &sqlStore{
 		db: db,
 	}
 	var err error
@@ -39,7 +40,7 @@ func NewSQLStore(db *sql.DB) (*SQLStore, error) {
 	return s, err
 }
 
-func (s *SQLStore) Categories() (map[string]int64, error) {
+func (s *sqlStore) Categories() (map[string]int64, error) {
 	rows, err := s.categoriesQuery.Query()
 	if err != nil {
 		return nil, err
@@ -57,7 +58,7 @@ func (s *SQLStore) Categories() (map[string]int64, error) {
 	return categories, rows.Err()
 }
 
-func (s *SQLStore) AddCategory(name string) error {
+func (s *sqlStore) AddCategory(name string) error {
 	res, err := s.insertCategoryQuery.Exec(name)
 	if err != nil {
 		return err
@@ -66,15 +67,15 @@ func (s *SQLStore) AddCategory(name string) error {
 	return err
 }
 
-func (s *SQLStore) AddDocument(category string, tokens []string) error {
+func (s *sqlStore) AddDocument(category string, tokens []string) error {
 	return s.updateDocument(category, tokens, 1)
 }
 
-func (s *SQLStore) RemoveDocument(category string, tokens []string) error {
+func (s *sqlStore) RemoveDocument(category string, tokens []string) error {
 	return s.updateDocument(category, tokens, -1)
 }
 
-func (s *SQLStore) updateDocument(category string, tokens []string, delta int64) error {
+func (s *sqlStore) updateDocument(category string, tokens []string, delta int64) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -93,17 +94,17 @@ func (s *SQLStore) updateDocument(category string, tokens []string, delta int64)
 		return ErrCategoryDoesNotExist(category)
 	}
 	row := tx.QueryRow("SELECT id FROM categories WHERE name = ?", category)
-	var categoryId int64
-	if err := row.Scan(&categoryId); err != nil {
+	var categoryID int64
+	if err := row.Scan(&categoryID); err != nil {
 		tx.Rollback()
 		return err
 	}
 	for _, t := range tokens {
 		var res sql.Result
 		if delta > 0 {
-			res, err = tx.Exec(updateOrInsertTokenCountQuery, categoryId, t, delta, categoryId, t)
+			res, err = tx.Exec(updateOrInsertTokenCountQuery, categoryID, t, delta, categoryID, t)
 		} else {
-			res, err = tx.Exec(updateTokenCountQuery, delta, categoryId, t)
+			res, err = tx.Exec(updateTokenCountQuery, delta, categoryID, t)
 		}
 		if err != nil {
 			tx.Rollback()
@@ -123,12 +124,12 @@ func (s *SQLStore) updateDocument(category string, tokens []string, delta int64)
 }
 
 // TODO: make this more robust and secure (database specific?)
-func (s *SQLStore) escape(st string) string {
+func (s *sqlStore) escape(st string) string {
 	st = strings.Replace(st, "'", "''", -1)
 	return "'" + st + "'"
 }
 
-func (s *SQLStore) TokenCounts(categories []string, tokens []string) (map[string]map[string]int64, error) {
+func (s *sqlStore) TokenCounts(categories []string, tokens []string) (map[string]map[string]int64, error) {
 	rows, err := s.categoriesQuery.Query()
 	if err != nil {
 		return nil, err
@@ -149,27 +150,27 @@ func (s *SQLStore) TokenCounts(categories []string, tokens []string) (map[string
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	categoryIds := make([]string, len(categories))
+	categoryIDs := make([]string, len(categories))
 	if categories == nil {
 		categories = make([]string, 0, len(categoryMap))
 		for name, id := range categoryMap {
 			categories = append(categories, name)
-			categoryIds = append(categoryIds, strconv.FormatInt(id, 10))
+			categoryIDs = append(categoryIDs, strconv.FormatInt(id, 10))
 		}
 	} else {
 		for i, c := range categories {
-			if id, ok := categoryMap[c]; !ok {
+			id, ok := categoryMap[c]
+			if !ok {
 				return nil, ErrCategoryDoesNotExist(c)
-			} else {
-				categoryIds[i] = strconv.FormatInt(id, 10)
 			}
+			categoryIDs[i] = strconv.FormatInt(id, 10)
 		}
 	}
 	escapedTokens := make([]string, len(tokens))
 	for i, t := range tokens {
 		escapedTokens[i] = s.escape(t)
 	}
-	query := fmt.Sprintf(tokensQuery, strings.Join(categoryIds, ","), strings.Join(escapedTokens, ","))
+	query := fmt.Sprintf(tokensQuery, strings.Join(categoryIDs, ","), strings.Join(escapedTokens, ","))
 	rows, err = s.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -181,13 +182,13 @@ func (s *SQLStore) TokenCounts(categories []string, tokens []string) (map[string
 	}
 	for rows.Next() {
 		var id int64
-		var categoryId int64
+		var categoryID int64
 		var token string
 		var count int64
-		if err := rows.Scan(&id, &categoryId, &token, &count); err != nil {
+		if err := rows.Scan(&id, &categoryID, &token, &count); err != nil {
 			return nil, err
 		}
-		if c := revCategoryMap[categoryId]; c != "" {
+		if c := revCategoryMap[categoryID]; c != "" {
 			res[c][token] = count
 		}
 	}

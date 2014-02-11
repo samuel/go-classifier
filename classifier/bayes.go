@@ -5,6 +5,7 @@ import (
 	"sort"
 )
 
+// Default values for tuneables
 const (
 	DefaultUnknownTokenProbability = 0.5
 	DefaultUnknowntokenStrength    = 0.45
@@ -12,6 +13,7 @@ const (
 	DefaultMinProbabilityStrength  = 0.1
 )
 
+// BayesianClassifier is a naive Bayes classifier
 type BayesianClassifier struct {
 	store     Store
 	tokenizer Tokenizer
@@ -22,6 +24,7 @@ type BayesianClassifier struct {
 	MinProbabilityStrength  float64 // distance from 0.5
 }
 
+// NewBayesianClassifier returns a new BayesianClassifier with default settings
 func NewBayesianClassifier(store Store, tokenizer Tokenizer) (*BayesianClassifier, error) {
 	return &BayesianClassifier{
 		store:                   store,
@@ -33,10 +36,12 @@ func NewBayesianClassifier(store Store, tokenizer Tokenizer) (*BayesianClassifie
 	}, nil
 }
 
+// AddCategory creates a new category if it doesn't already exist
 func (bc *BayesianClassifier) AddCategory(name string) error {
 	return bc.store.AddCategory(name)
 }
 
+// AddDocument trains the classifier by feeding it text that's in the given category
 func (bc *BayesianClassifier) AddDocument(category string, text string) error {
 	tokens, err := bc.tokenizer.Tokenize(text)
 	if err != nil {
@@ -45,6 +50,7 @@ func (bc *BayesianClassifier) AddDocument(category string, text string) error {
 	return bc.store.AddDocument(category, tokens)
 }
 
+// RemoveDocument untrains the classifier
 func (bc *BayesianClassifier) RemoveDocument(category string, text string) error {
 	tokens, err := bc.tokenizer.Tokenize(text)
 	if err != nil {
@@ -53,7 +59,7 @@ func (bc *BayesianClassifier) RemoveDocument(category string, text string) error
 	return bc.store.RemoveDocument(category, tokens)
 }
 
-// Return P(document is in category | document)
+// CategoryProbabilities returns P(document is in category | document)
 func (bc *BayesianClassifier) CategoryProbabilities(text string, categories []string) (map[string]float64, error) {
 	tokens, err := bc.tokenizer.Tokenize(text)
 	if err != nil {

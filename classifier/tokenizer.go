@@ -2,13 +2,16 @@ package classifier
 
 import "strings"
 
+// Tokenizer is the interface for a text tokenizer
 type Tokenizer interface {
 	Tokenize(text string) ([]string, error)
 }
 
-type simpleTokenizer int
+type simpleTokenizer struct{}
 
-var SimpleTokenizer = simpleTokenizer(0)
+// SimpleTokenizer is a basic text tokenizer that splits on whitespace using strings.Fields,
+// removes tokens shorter than 3 character, and removes duplicates.
+var SimpleTokenizer = simpleTokenizer{}
 
 func (t simpleTokenizer) Tokenize(text string) ([]string, error) {
 	fields := strings.Fields(text)

@@ -5,16 +5,18 @@ import (
 )
 
 var (
-	ErrCategoryAlreadyExists = errors.New("classifier: category already exists")
-	ErrNegativeCount         = errors.New("classifier: count would go negative")
+	// ErrNegativeCount is the error that's returned when a count goes or is about to go negative.
+	ErrNegativeCount = errors.New("classifier: count would go negative")
 )
 
+// ErrCategoryDoesNotExist is the error returned when a category doesn't exist.
 type ErrCategoryDoesNotExist string
 
 func (e ErrCategoryDoesNotExist) Error() string {
-	return "ErrCategoryDoesNotExist(" + string(e) + ")"
+	return "classifier: category " + string(e) + " does not exist"
 }
 
+// Store is the storage interface for a classifier
 type Store interface {
 	Categories() (map[string]int64, error) // category -> document count
 	AddCategory(name string) error
@@ -29,6 +31,7 @@ type localStore struct {
 	tokenCounts    map[string]map[string]int64 // category -> token -> count
 }
 
+// NewLocalStore returns a new in-memory store (for testing purposes mainly)
 func NewLocalStore() Store {
 	return &localStore{
 		categories:     make([]string, 0),
