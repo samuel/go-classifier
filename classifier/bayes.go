@@ -148,7 +148,7 @@ func (bc *BayesianClassifier) probabilities(tokens, categories []string) (map[st
 		prob[cat] = make([]float64, len(tokens))
 	}
 	unk := bc.UnknownTokenStrength * bc.UnknownTokenProbability
-	for tokenI, t := range tokens {
+	for tokIndex, tok := range tokens {
 		rSum := 0.0 // Sum(P(token|category)) for all categories
 		nSum := int64(0)
 		for cat, counts := range tokenCounts {
@@ -156,14 +156,14 @@ func (bc *BayesianClassifier) probabilities(tokens, categories []string) (map[st
 			if n < 1 {
 				n = 1
 			}
-			rSum += float64(counts[t]) / n
-			nSum += counts[t]
+			rSum += float64(counts[tok]) / n
+			nSum += counts[tok]
 		}
 
 		for cat, pr := range prob {
 			p := bc.UnknownTokenProbability
 			if rSum > 0.0 {
-				tc := tokenCounts[cat][t]
+				tc := tokenCounts[cat][tok]
 				dc := docCounts[cat]
 				if dc < 1 {
 					dc = 1
@@ -180,7 +180,7 @@ func (bc *BayesianClassifier) probabilities(tokens, categories []string) (map[st
 				// Weight
 				p = (unk + float64(nSum)*p) / (bc.UnknownTokenStrength + float64(nSum))
 			}
-			pr[tokenI] = p
+			pr[tokIndex] = p
 		}
 	}
 
