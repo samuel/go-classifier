@@ -42,7 +42,7 @@ func (bc *BayesianClassifier) AddCategory(name string) error {
 }
 
 // AddDocument trains the classifier by feeding it text that's in the given category
-func (bc *BayesianClassifier) AddDocument(category string, text string) error {
+func (bc *BayesianClassifier) AddDocument(category, text string) error {
 	tokens, err := bc.tokenizer.Tokenize(text)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (bc *BayesianClassifier) AddDocument(category string, text string) error {
 }
 
 // RemoveDocument untrains the classifier
-func (bc *BayesianClassifier) RemoveDocument(category string, text string) error {
+func (bc *BayesianClassifier) RemoveDocument(category, text string) error {
 	tokens, err := bc.tokenizer.Tokenize(text)
 	if err != nil {
 		return err
@@ -97,7 +97,7 @@ func (bc *BayesianClassifier) CategoryProbabilities(text string, categories []st
 	return catProb, nil
 }
 
-func (bc *BayesianClassifier) filteredProbabilities(tokens []string, categories []string) (map[string][]float64, error) {
+func (bc *BayesianClassifier) filteredProbabilities(tokens, categories []string) (map[string][]float64, error) {
 	probs, err := bc.probabilities(tokens, categories)
 	if err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ func (bc *BayesianClassifier) filteredProbabilities(tokens []string, categories 
 }
 
 // return P(document is in category | document contains token)
-func (bc *BayesianClassifier) probabilities(tokens []string, categories []string) (map[string][]float64, error) {
+func (bc *BayesianClassifier) probabilities(tokens, categories []string) (map[string][]float64, error) {
 	tokenCounts, err := bc.store.TokenCounts(nil, tokens)
 	if err != nil {
 		return nil, err
