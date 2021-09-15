@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -23,7 +24,6 @@ type sqlStore struct {
 	db                  *sql.DB
 	categoriesQuery     *sql.Stmt
 	insertCategoryQuery *sql.Stmt
-	tokensQuery         *sql.Stmt
 }
 
 // NewSQLStore returns an SQL database backed Store
@@ -45,7 +45,7 @@ func (s *sqlStore) Categories() (map[string]int64, error) {
 	if err != nil {
 		return nil, err
 	}
-	categories := make(map[string]int64, 0)
+	categories := make(map[string]int64)
 	for rows.Next() {
 		var id int64
 		var name string
@@ -82,7 +82,9 @@ func (s *sqlStore) updateDocument(category string, tokens []string, delta int64)
 	}
 	res, err := tx.Exec(updateDocCountQuery, delta, category)
 	if err != nil {
-		tx.Rollback()
+		if err2 := tx.Rollback(); err2 != nil {
+			log.Printf("classifier: failed to rollback: %s", err2)
+		}
 		return err
 	}
 	if n, err := res.RowsAffected(); err != nil {
@@ -96,7 +98,9 @@ func (s *sqlStore) updateDocument(category string, tokens []string, delta int64)
 	row := tx.QueryRow("SELECT id FROM categories WHERE name = ?", category)
 	var categoryID int64
 	if err := row.Scan(&categoryID); err != nil {
-		tx.Rollback()
+		if err2 := tx.Rollback(); err2 != nil {
+			log.Printf("classifier: failed to rollback: %s", err2)
+		}
 		return err
 	}
 	for _, t := range tokens {
@@ -107,20 +111,23 @@ func (s *sqlStore) updateDocument(category string, tokens []string, delta int64)
 			res, err = tx.Exec(updateTokenCountQuery, delta, categoryID, t)
 		}
 		if err != nil {
-			tx.Rollback()
+			if err2 := tx.Rollback(); err2 != nil {
+				log.Printf("classifier: failed to rollback: %s", err2)
+			}
 			return err
 		} else if n, err := res.RowsAffected(); err != nil {
-			tx.Rollback()
+			if err2 := tx.Rollback(); err2 != nil {
+				log.Printf("classifier: failed to rollback: %s", err2)
+			}
 			return err
 		} else if n != 1 {
-			if err := tx.Rollback(); err != nil {
-				return err
+			if err2 := tx.Rollback(); err2 != nil {
+				log.Printf("classifier: failed to rollback: %s", err2)
 			}
 			return errors.New("classifier: failed to update token")
 		}
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 // TODO: make this more robust and secure (database specific?)
@@ -178,7 +185,7 @@ func (s *sqlStore) TokenCounts(categories, tokens []string) (map[string]map[stri
 	defer rows.Close()
 	res := make(map[string]map[string]int64, len(categories))
 	for _, c := range categories {
-		res[c] = make(map[string]int64, 0)
+		res[c] = make(map[string]int64)
 	}
 	for rows.Next() {
 		var id int64

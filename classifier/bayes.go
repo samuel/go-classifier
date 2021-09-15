@@ -122,7 +122,7 @@ func (bc *BayesianClassifier) filteredProbabilities(tokens, categories []string)
 		}
 
 		if bc.MaxDiscriminators > 0 && len(pr) > bc.MaxDiscriminators {
-			sort.Sort(sort.Float64Slice(pr))
+			sort.Float64s(pr)
 			pr = pr[:bc.MaxDiscriminators]
 		}
 
